@@ -3,160 +3,174 @@ import math
 import pandas as pd
 from datetime import datetime, timedelta
 
-# --- 核心算法类 ---
+# --- 核心算法类 (集成了所有功能) ---
 class FitnessCalculator:
-    def __init__(self, weight=0, height=0, age=0, gender='male'):
-        self.weight = weight
-        self.height = height
-        self.age = age
-        self.gender = gender
+    def __init__(self, gender, age, height_cm, weight_kg, neck_cm, waist_cm, hip_cm=0):
+        self.gender = gender.lower()
+        self.age = int(age)
+        self.height = float(height_cm)
+        self.weight = float(weight_kg)
+        self.neck = float(neck_cm)
+        self.waist = float(waist_cm)
+        self.hip = float(hip_cm)
 
+    # 1. 体脂率计算 (美国海军法)
+    def calculate_body_fat(self):
+        if self.gender == 'male':
+            bfp = 495 / (1.0324 - 0.19077 * math.log10(self.waist - self.neck) + 0.15456 * math.log10(self.height)) - 450
+        else:
+            bfp = 495 / (1.29579 - 0.35004 * math.log10(self.waist + self.hip - self.neck) + 0.22100 * math.log10(self.height)) - 450
+        return round(bfp, 2)
+
+    # 2. 基础代谢 (BMR)
+    def calculate_bmr(self):
+        base = (10 * self.weight) + (6.25 * self.height) - (5 * self.age)
+        if self.gender == 'male':
+            return base + 5
+        else:
+            return base - 161
+
+    # 3. TDEE 计算
+    def calculate_tdee(self, activity_key):
+        bmr = self.calculate_bmr()
+        multipliers = {"Sedentary": 1.2, "Light": 1.375, "Moderate": 1.55, "Active": 1.725, "Extreme": 1.9}
+        return round(bmr * multipliers.get(activity_key, 1.2))
+
+    # 4. 营养分配
+    def nutrition_plan(self, tdee, goal_key):
+        adjustments = {"Cut": 0.80, "Maintain": 1.0, "Bulk": 1.10}
+        target = round(tdee * adjustments.get(goal_key, 1.0))
+        
+        # 蛋白质 2g/kg, 脂肪 0.8g/kg
+        protein = round(self.weight * 2.0)
+        fat = round(self.weight * 0.8)
+        
+        consumed = (protein * 4) + (fat * 9)
+        carbs = round((target - consumed) / 4)
+        if carbs < 0: carbs = 50 # 保底
+
+        return {"Cal": target, "Pro": protein, "Fat": fat, "Carb": carbs}
+
+    # 5. BMI 计算
     def calculate_bmi(self):
-        """计算 BMI"""
-        if self.height <= 0: return 0
-        height_m = self.height / 100
-        return round(self.weight / (height_m ** 2), 1)
+        h_m = self.height / 100
+        return round(self.weight / (h_m ** 2), 1)
 
-    def calculate_1rm(self, lift_weight, reps):
-        """计算 1RM (Epley 公式)"""
+    # 6. 1RM 力量计算 (静态方法，不需要身高体重)
+    @staticmethod
+    def calculate_1rm(lift_weight, reps):
         if reps == 1: return lift_weight
         return round(lift_weight * (1 + reps / 30), 1)
 
-    def calculate_sleep_times(self, wake_time):
-        """
-        计算推荐的入睡时间 (倒推 4-6 个周期, 每个周期 90 分钟 + 15 分钟入睡时间)
-        """
-        # 将 wake_time (time对象) 转为 datetime 以便计算
+    # 7. 睡眠周期 (静态方法)
+    @staticmethod
+    def calculate_sleep(wake_time):
         now = datetime.now()
         wake_dt = datetime.combine(now.date(), wake_time)
+        if wake_dt < now: wake_dt += timedelta(days=1)
         
-        # 如果起床时间比现在早，说明是明天
-        if wake_dt < now:
-            wake_dt += timedelta(days=1)
-            
-        cycles = [4, 5, 6] # 睡 6小时, 7.5小时, 9小时
+        cycles = [4, 5, 6]
         bedtimes = []
-        
         for c in cycles:
-            # 倒推时间：周期 * 90分钟 + 15分钟入睡缓冲
             minutes_needed = (c * 90) + 15
             bed_dt = wake_dt - timedelta(minutes=minutes_needed)
-            bedtimes.append({
-                "cycles": c,
-                "sleep_duration": f"{c * 1.5} 小时",
-                "bed_time": bed_dt.strftime("%H:%M")
-            })
+            bedtimes.append({"cycles": c, "dur": f"{c * 1.5}h", "time": bed_dt.strftime("%H:%M")})
         return bedtimes
 
-    # (保留之前的体脂和TDEE算法，为了代码简洁这里省略部分重复逻辑，但在主程序中调用)
+# --- 页面 UI ---
+st.set_page_config(page_title="全能健身助手 v3.0", page_icon="💪", layout="wide")
 
-# --- 页面设置 ---
-st.set_page_config(page_title="全能健身助手 v2.0", page_icon="🔥", layout="wide")
-st.title("🔥 全能健身助手 v2.0")
+st.title("💪 全能健身助手 v3.0")
 
-# 使用 Tabs 分割功能
-tab1, tab2, tab3, tab4 = st.tabs(["📊 营养与体脂", "🛌 睡眠周期 (REM)", "🏋️‍♂️ 极限力量 (1RM)", "⚖️ BMI 简测"])
+# --- 侧边栏：公共输入区域 ---
+with st.sidebar:
+    st.header("📝 个人数据录入")
+    st.info("在这里输入数据，所有功能都会自动使用！")
+    
+    gender = st.radio("性别", ["Male", "Female"], horizontal=True)
+    age = st.number_input("年龄", 25, 100)
+    height = st.number_input("身高 (cm)", 175.0)
+    weight = st.number_input("体重 (kg)", 70.0)
+    
+    st.markdown("---")
+    st.markdown("**体脂测量数据:**")
+    neck = st.number_input("颈围 (cm)", 38.0)
+    waist = st.number_input("腰围 (cm)", 80.0, help="肚脐处水平测量")
+    hip = 0.0
+    if gender == "Female":
+        hip = st.number_input("臀围 (cm)", 95.0, help="臀部最宽处")
 
-# ==========================================
-# Tab 1: 营养与体脂 (之前的核心功能)
-# ==========================================
+    # 实例化计算器
+    user = FitnessCalculator(gender, age, height, weight, neck, waist, hip)
+
+# --- 主界面：标签页 ---
+tab1, tab2, tab3, tab4 = st.tabs(["📊 体脂与饮食", "🛌 睡眠 (REM)", "🏋️‍♂️ 力量 (1RM)", "⚖️ BMI检测"])
+
+# === Tab 1: 体脂与饮食 ===
 with tab1:
-    st.markdown("### 身体数据与营养规划")
-    # 这里为了演示简洁，复用之前的逻辑，建议把之前的代码逻辑封装好放在这里
-    # 简单示例输入
-    col1, col2 = st.columns(2)
-    with col1:
-        t1_weight = st.number_input("体重 (kg)", 70.0, key="t1_w")
-        t1_height = st.number_input("身高 (cm)", 175.0, key="t1_h")
-        t1_age = st.number_input("年龄", 25, key="t1_a")
-    with col2:
-        t1_gender = st.radio("性别", ["Male", "Female"], key="t1_g")
+    col_input1, col_input2 = st.columns(2)
+    with col_input1:
+        activity_label = st.selectbox("日常活动", ["久坐 (Sedentary)", "轻度 (Light)", "中度 (Moderate)", "高度 (Active)", "极度 (Extreme)"])
+        activity_key = activity_label.split("(")[1].replace(")", "")
+    with col_input2:
+        goal_label = st.selectbox("目标", ["减脂 (Cut)", "维持 (Maintain)", "增肌 (Bulk)"])
+        goal_key = goal_label.split("(")[1].replace(")", "")
     
-    if st.button("计算 TDEE & 营养", key="btn_tdee"):
-        # 简单展示计算结果 (你可以把之前的详细逻辑搬过来)
-        bmr = 10 * t1_weight + 6.25 * t1_height - 5 * t1_age + (5 if t1_gender=='Male' else -161)
-        tdee = int(bmr * 1.55) # 默认中度活动
-        st.success(f"你的基础代谢 (BMR): {int(bmr)} kcal")
-        st.info(f"你的每日维持热量 (TDEE): {tdee} kcal")
-
-# ==========================================
-# Tab 2: 睡眠周期 (REM) - 新功能！
-# ==========================================
-with tab2:
-    st.header("🛌 什么时候睡觉最合适？")
-    st.markdown("基于 **90分钟睡眠周期 (REM Cycles)** 计算。")
-    st.markdown("> 💡 **原理：** 如果你在睡眠周期结束时醒来，会感到精力充沛。")
-    
-    wake_time = st.time_input("你想几点起床？", datetime.strptime("07:00", "%H:%M").time())
-    
-    if st.button("计算最佳入睡时间"):
-        calc = FitnessCalculator()
-        results = calc.calculate_sleep_times(wake_time)
+    if st.button("开始计算身体数据", type="primary"):
+        # 计算
+        bfp = user.calculate_body_fat()
+        tdee = user.calculate_tdee(activity_key)
+        plan = user.nutrition_plan(tdee, goal_key)
         
-        st.write(f"如果你想在 **{wake_time.strftime('%H:%M')}** 起床，建议在以下时间入睡：")
+        # 显示结果
+        st.divider()
+        c1, c2, c3 = st.columns(3)
+        c1.metric("体脂率 (BFP)", f"{bfp}%")
+        c2.metric("每日消耗 (TDEE)", f"{tdee} kcal")
+        c3.metric("目标热量", f"{plan['Cal']} kcal", delta=f"{plan['Cal'] - tdee} kcal")
         
-        cols = st.columns(3)
-        colors = ["🔴", "🟡", "🟢"] # 颜色代表推荐程度
-        
-        for i, res in enumerate(results):
-            with cols[i]:
-                st.metric(
-                    label=f"{colors[i]} 睡 {res['sleep_duration']}",
-                    value=res['bed_time'],
-                    delta=f"{res['cycles']} 个周期"
-                )
-        st.caption("*已包含15分钟的入睡准备时间")
-
-# ==========================================
-# Tab 3: 极限力量 (1RM) - 新功能！
-# ==========================================
-with tab3:
-    st.header("🏋️‍♂️ 1RM 极限力量估算")
-    st.markdown("基于 **Epley 公式**。输入你平时训练的重量和次数，估算你的极限。")
-    
-    c1, c2 = st.columns(2)
-    with c1:
-        lift_weight = st.number_input("训练重量 (kg)", value=60.0, step=2.5)
-    with c2:
-        reps = st.number_input("完成次数 (Reps)", value=8, step=1, max_value=20)
-        
-    if st.button("计算 1RM"):
-        calc = FitnessCalculator()
-        one_rm = calc.calculate_1rm(lift_weight, reps)
-        
-        st.metric(label="你的 1RM (估算极限)", value=f"{one_rm} kg")
-        
-        st.markdown("#### 📋 训练重量参考表")
-        # 生成一个简单的百分比参考表
-        df_pct = pd.DataFrame({
-            "强度": ["100% (极限)", "90% (力量)", "80% (增肌)", "70% (耐力)"],
-            "重量": [f"{one_rm} kg", f"{round(one_rm*0.9,1)} kg", f"{round(one_rm*0.8,1)} kg", f"{round(one_rm*0.7,1)} kg"]
+        st.subheader("🥗 宏量营养素建议")
+        macro_df = pd.DataFrame({
+            "营养素": ["蛋白质", "脂肪", "碳水"],
+            "克重 (g)": [plan['Pro'], plan['Fat'], plan['Carb']]
         })
-        st.table(df_pct)
+        st.bar_chart(macro_df, x="营养素", y="克重 (g)")
 
-# ==========================================
-# Tab 4: BMI - 新功能！
-# ==========================================
-with tab4:
-    st.header("⚖️ BMI 指数计算")
-    b_weight = st.number_input("体重 (kg)", 70.0, key="bmi_w")
-    b_height = st.number_input("身高 (cm)", 175.0, key="bmi_h")
+# === Tab 2: 睡眠周期 ===
+with tab2:
+    st.markdown("### 🛌 倒推最佳入睡时间")
+    wake_time = st.time_input("我想几点起床？", datetime.strptime("07:00", "%H:%M").time())
     
-    if st.button("查看结果"):
-        calc = FitnessCalculator(weight=b_weight, height=b_height)
-        bmi = calc.calculate_bmi()
-        
-        state = ""
-        color = "off"
-        if bmi < 18.5: state, color = "偏瘦", "blue"
-        elif 18.5 <= bmi < 24.9: state, color = "正常", "green"
-        elif 25 <= bmi < 29.9: state, color = "超重", "orange"
-        else: state, color = "肥胖", "red"
-        
-        st.metric("你的 BMI", bmi)
-        if color == "green":
-            st.success(f"状态：{state}")
-        elif color == "red":
-            st.error(f"状态：{state}")
-        else:
-            st.warning(f"状态：{state}")
+    if st.button("计算睡眠时间"):
+        results = user.calculate_sleep(wake_time)
+        cols = st.columns(3)
+        for i, res in enumerate(results):
+            cols[i].metric(f"睡 {res['dur']}", res['time'], f"{res['cycles']}个周期")
+
+# === Tab 3: 1RM 力量 ===
+with tab3:
+    st.markdown("### 🏋️‍♂️ 估算极限力量 (1RM)")
+    c1, c2 = st.columns(2)
+    w = c1.number_input("训练重量 (kg)", 60.0)
+    r = c2.number_input("重复次数 (Reps)", 8)
+    
+    if st.button("计算 1RM"):
+        one_rm = user.calculate_1rm(w, r)
+        st.metric("你的 1RM 估算", f"{one_rm} kg")
+        st.info(f"建议训练组 (80%强度): {round(one_rm*0.8, 1)} kg x 8-10 次")
+
+# === Tab 4: BMI ===
+with tab4:
+    st.markdown("### ⚖️ BMI 健康简测")
+    bmi = user.calculate_bmi()
+    
+    st.metric("当前 BMI", bmi)
+    
+    if bmi < 18.5:
+        st.warning("状态：偏瘦 (Underweight)")
+    elif 18.5 <= bmi < 24.9:
+        st.success("状态：正常 (Normal)")
+    elif 25 <= bmi < 29.9:
+        st.warning("状态：超重 (Overweight)")
+    else:
+        st.error("状态：肥胖 (Obese)")
