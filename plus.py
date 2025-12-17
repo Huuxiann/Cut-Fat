@@ -84,21 +84,30 @@ st.title("💪 全能健身助手 v3.0")
 
 # --- 侧边栏：公共输入区域 ---
 with st.sidebar:
+# --- 侧边栏：公共输入区域 ---
+with st.sidebar:
     st.header("📝 个人数据录入")
     st.info("在这里输入数据，所有功能都会自动使用！")
     
     gender = st.radio("性别", ["Male", "Female"], horizontal=True)
-    age = st.number_input("年龄", 25, 100)
-    height = st.number_input("身高 (cm)", 175.0)
-    weight = st.number_input("体重 (kg)", 70.0)
+    
+    # 修复版：显式指定 min_value 和 value
+    age = st.number_input("年龄", min_value=10, max_value=100, value=25)
+    
+    height = st.number_input("身高 (cm)", min_value=100.0, max_value=250.0, value=175.0)
+    
+    weight = st.number_input("体重 (kg)", min_value=30.0, max_value=200.0, value=70.0)
     
     st.markdown("---")
     st.markdown("**体脂测量数据:**")
-    neck = st.number_input("颈围 (cm)", 38.0)
-    waist = st.number_input("腰围 (cm)", 80.0, help="肚脐处水平测量")
+    
+    neck = st.number_input("颈围 (cm)", min_value=20.0, max_value=60.0, value=38.0)
+    
+    waist = st.number_input("腰围 (cm)", min_value=40.0, max_value=150.0, value=80.0, help="肚脐处水平测量")
+    
     hip = 0.0
     if gender == "Female":
-        hip = st.number_input("臀围 (cm)", 95.0, help="臀部最宽处")
+        hip = st.number_input("臀围 (cm)", min_value=50.0, max_value=150.0, value=95.0, help="臀部最宽处")
 
     # 实例化计算器
     user = FitnessCalculator(gender, age, height, weight, neck, waist, hip)
@@ -174,3 +183,4 @@ with tab4:
         st.warning("状态：超重 (Overweight)")
     else:
         st.error("状态：肥胖 (Obese)")
+
