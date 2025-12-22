@@ -19,7 +19,7 @@ if 'generated_words' not in st.session_state:
 
 # --- 背景音乐链接 (在此处替换为你喜欢的 .mp3 链接) ---
 # 示例链接：一段轻柔的钢琴背景音
-BGM_URL = "https://github.com/Huuxiann/Cut-Fat/blob/main/%E5%9C%A8%E8%99%9A%E6%97%A0%E4%B8%AD%E6%B0%B8%E5%AD%98%20-%20%E8%8B%B1%E9%9B%84%E4%B8%BB%E4%B9%89.flac"
+BGM_URL = "https://cdn.pixabay.com/audio/2022/10/05/audio_68637d4023.mp3"
 
 # --- 古风词库 (100词) ---
 GUFENG_WORDS = [
@@ -35,15 +35,79 @@ GUFENG_WORDS = [
     "心想", "事成", "美梦", "成真", "笑口", "常开", "福如", "东海", "寿比", "南山"
 ]
 
-# --- 播放背景音乐函数 ---
+# --- 播放背景音乐函数 (增强版) ---
 def play_bgm():
-    # 使用 hidden 属性隐藏播放器，autoplay 自动播放，loop 循环
-    # 注意：大部分浏览器需要用户与页面有交互（点击等）后才允许自动播放音频
-    # 因为我们是在点击按钮进入第二页后加载此代码，所以通常能成功触发
+    # 注入 HTML5 Audio 和 JavaScript 控制脚本
+    # 增加右上角悬浮按钮，如果自动播放失败，用户可以点击图标播放
     st.markdown(f"""
-    <audio autoplay loop hidden>
-        <source src="{BGM_URL}" type="audio/mp3">
-    </audio>
+    <div style="display:none">
+        <audio id="bgm_audio" preload="auto" loop>
+            <source src="{BGM_URL}" type="audio/mp3">
+        </audio>
+    </div>
+    
+    <!-- 音乐控制悬浮按钮 -->
+    <div id="music_btn" onclick="toggleMusic()" style="
+        position: fixed; 
+        top: 20px; 
+        right: 20px; 
+        z-index: 99999; 
+        cursor: pointer; 
+        width: 40px; 
+        height: 40px;
+        line-height: 40px;
+        text-align: center;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.2);
+        backdrop-filter: blur(4px);
+        font-size: 20px;
+        color: white;
+        transition: all 0.3s;
+        user-select: none;
+    ">
+        🔇
+    </div>
+
+    <script>
+        var audio = document.getElementById("bgm_audio");
+        var btn = document.getElementById("music_btn");
+        
+        // 尝试自动播放
+        function tryPlay() {{
+            var playPromise = audio.play();
+            if (playPromise !== undefined) {{
+                playPromise.then(_ => {{
+                    // 播放成功
+                    btn.innerHTML = "🎵";
+                    btn.style.animation = "spin 4s linear infinite";
+                }}).catch(error => {{
+                    // 播放失败（通常是因为浏览器策略）
+                    console.log("Autoplay prevented. Waiting for user interaction.");
+                    btn.innerHTML = "🔇";
+                    btn.style.animation = "none";
+                }});
+            }}
+        }}
+        
+        // 页面加载后立即尝试
+        setTimeout(tryPlay, 500);
+
+        // 切换播放状态
+        function toggleMusic() {{
+            if (audio.paused) {{
+                audio.play();
+                btn.innerHTML = "🎵";
+                btn.style.animation = "spin 4s linear infinite";
+            }} else {{
+                audio.pause();
+                btn.innerHTML = "🔇";
+                btn.style.animation = "none";
+            }}
+        }}
+    </script>
+    <style>
+        @keyframes spin {{ 100% {{ transform: rotate(360deg); }} }}
+    </style>
     """, unsafe_allow_html=True)
 
 # --- CSS 样式注入 ---
@@ -318,4 +382,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
