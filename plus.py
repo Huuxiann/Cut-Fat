@@ -32,21 +32,17 @@ GUFENG_WORDS = [
 ]
 
 # --- CSS 样式注入 ---
-# 这里包含了所有的视觉魔法：背景切换、按钮样式、文字动画
 def local_css(page_type):
     if page_type == 'landing':
-        # 温暖背景 CSS
+        # 温暖背景 CSS (保持原样，微调按钮质感)
         bg_style = """
         <style>
             .stApp {
                 background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
                 background-image: linear-gradient(to top, #fad0c4 0%, #ffd1ff 100%);
             }
-            /* 隐藏默认的header和footer */
-            header {visibility: hidden;}
-            footer {visibility: hidden;}
+            header, footer {visibility: hidden;}
             
-            /* 圆形按钮容器 */
             .btn-container {
                 display: flex;
                 flex-direction: column;
@@ -55,103 +51,126 @@ def local_css(page_type):
                 height: 70vh;
             }
             
-            /* 自定义按钮样式 */
             div.stButton > button {
                 width: 200px;
                 height: 200px;
                 border-radius: 50%;
                 background: linear-gradient(45deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
                 color: white;
-                font-size: 24px;
+                font-size: 26px;
                 font-weight: bold;
                 border: none;
-                box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+                box-shadow: 0 10px 30px rgba(255, 107, 107, 0.4);
                 transition: all 0.3s ease;
                 animation: pulse 2s infinite;
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
             }
             
             div.stButton > button:hover {
-                transform: scale(1.05);
-                box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+                transform: scale(1.08);
+                box-shadow: 0 15px 40px rgba(255, 107, 107, 0.6);
                 background: linear-gradient(45deg, #fecfef 0%, #ff9a9e 100%);
-                border-color: transparent;
-            }
-            
-            div.stButton > button:active {
-                background-color: #ff6b6b;
-                color: white;
             }
 
-            /* 按钮下方的备注文字 */
             .sub-text {
-                margin-top: 20px;
-                color: #555;
+                margin-top: 25px;
+                color: #777;
                 font-family: 'Helvetica Neue', sans-serif;
                 font-size: 16px;
-                letter-spacing: 2px;
+                letter-spacing: 3px;
                 text-align: center;
+                opacity: 0.8;
+                animation: fadeInOut 3s infinite;
             }
 
             @keyframes pulse {
-                0% { box-shadow: 0 0 0 0 rgba(255, 154, 158, 0.4); }
-                70% { box-shadow: 0 0 0 20px rgba(255, 154, 158, 0); }
+                0% { box-shadow: 0 0 0 0 rgba(255, 154, 158, 0.6); }
+                70% { box-shadow: 0 0 0 25px rgba(255, 154, 158, 0); }
                 100% { box-shadow: 0 0 0 0 rgba(255, 154, 158, 0); }
+            }
+
+            @keyframes fadeInOut {
+                0%, 100% { opacity: 0.5; }
+                50% { opacity: 1; }
             }
         </style>
         """
     else:
-        # 黑色背景 CSS
+        # 黑色背景 CSS + 星空特效 + 流光文字
         bg_style = """
         <style>
             .stApp {
                 background-color: #000000;
+                /* 模拟星空背景 */
+                background-image: 
+                    radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 3px),
+                    radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 2px),
+                    radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 3px);
+                background-size: 550px 550px, 350px 350px, 250px 250px;
+                background-position: 0 0, 40px 60px, 130px 270px;
+                animation: starMove 100s linear infinite;
             }
-            header {visibility: hidden;}
-            footer {visibility: hidden;}
             
-            /* 中心金色文字 */
+            @keyframes starMove {
+                from {background-position: 0 0, 40px 60px, 130px 270px;}
+                to {background-position: 550px 550px, 390px 410px, 680px 820px;}
+            }
+
+            header, footer {visibility: hidden;}
+            
+            /* 中心金色文字 - 增加流光渐变效果 */
             .main-title {
                 position: absolute;
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
-                color: #FFD700;
-                font-size: 3em;
-                font-weight: bold;
-                text-shadow: 0 0 10px #FFD700, 0 0 20px #FF8C00;
+                font-size: 3.5em;
+                font-weight: 900;
+                background: linear-gradient(45deg, #FFD700, #FDB931, #FFFFE0, #FDB931, #FFD700);
+                background-size: 200% auto;
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                text-shadow: 0 0 30px rgba(253, 185, 49, 0.3);
                 z-index: 100;
                 white-space: nowrap;
-                animation: fadeIn 3s ease-in;
+                animation: shine 3s linear infinite, popIn 1.5s ease-out;
             }
 
-            /* 浮动文字的基础样式 */
+            @keyframes shine {
+                to { background-position: 200% center; }
+            }
+
+            @keyframes popIn {
+                0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); filter: blur(10px); }
+                100% { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: blur(0px); }
+            }
+
+            /* 浮动文字 */
             .floating-word {
                 position: absolute;
-                color: rgba(255, 255, 255, 0.8);
-                font-family: "KaiTi", "STKaiti", serif; /* 楷体更有古风感 */
+                color: rgba(255, 255, 255, 0.9);
+                font-family: "KaiTi", "STKaiti", "SimSun", serif; 
                 user-select: none;
-                animation-name: floatIn;
-                animation-fill-mode: forwards;
                 opacity: 0;
+                text-shadow: 0 0 5px rgba(255,255,255,0.3);
+                animation: floatIn 4s ease-out forwards, drift 6s ease-in-out infinite alternate;
             }
 
-            @keyframes fadeIn {
-                0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
-                100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-            }
-
-            /* 从远处(小)飘向近处(大)或者直接淡入 */
+            /* 出现动画 */
             @keyframes floatIn {
-                0% { opacity: 0; transform: scale(0.1) translateY(20px); filter: blur(4px);}
-                100% { opacity: 0.8; transform: scale(1) translateY(0); filter: blur(0px);}
+                0% { opacity: 0; transform: scale(0) translateY(50px); filter: blur(5px);}
+                100% { opacity: var(--final-opacity); transform: scale(1) translateY(0); filter: blur(0px);}
+            }
+
+            /* 持续漂浮动画 */
+            @keyframes drift {
+                0% { transform: translateY(0px); }
+                100% { transform: translateY(-10px); }
             }
             
-            /* 返回按钮微调 */
             div.stButton > button {
-                background-color: transparent;
-                border: 1px solid #333;
-                color: #333;
-                margin-top: 20px;
+                border: 1px solid #444;
+                color: #666;
             }
         </style>
         """
@@ -161,17 +180,12 @@ def local_css(page_type):
 def landing_page():
     local_css("landing")
     
-    # 使用 Streamlit 的列布局来居中内容
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
-        st.markdown('<div style="height: 30vh;"></div>', unsafe_allow_html=True) # 占位符
+        st.markdown('<div style="height: 30vh;"></div>', unsafe_allow_html=True)
         
-        # 按钮容器
-        # 注意: Streamlit 的 button 无法直接包裹 div，所以我们用 CSS hack 了它的外观
-        # 这里的 key 很重要
         clicked = st.button("开启2026")
-        
         st.markdown('<div class="sub-text">点击开启你的2026</div>', unsafe_allow_html=True)
         
         if clicked:
@@ -186,51 +200,38 @@ def animation_page():
     st.markdown('<div class="main-title">希望2026年的你…</div>', unsafe_allow_html=True)
     
     # 2. 生成随机古风词汇
-    # 我们只在第一次进入这个页面时生成位置，防止Streamlit刷新导致跳动
     if not st.session_state.generated_words:
-        selected_words = random.sample(GUFENG_WORDS, 35) # 选取35个词展示，防止太拥挤
+        selected_words = random.sample(GUFENG_WORDS, 40) # 稍微增加数量到40
         
         html_elements = []
         for word in selected_words:
-            # 随机位置 (使用 vw/vh 视口单位)
             top = random.randint(5, 90)
             left = random.randint(5, 90)
             
-            # 避让中心区域 (大概范围 40-60%)
-            if 35 < top < 65 and 30 < left < 70:
+            # 避让中心区域 (加宽避让范围)
+            if 30 < top < 70 and 20 < left < 80:
                 continue
                 
-            # 随机大小 (模拟远近)
-            # 大字体 = 近 (opacity高, blur少)
-            # 小字体 = 远 (opacity低, blur多)
-            size = random.randint(12, 40)
-            
-            # 随机动画延迟，制造先后浮现的效果
-            delay = random.uniform(0.5, 4.0)
-            
-            # 根据大小计算透明度
-            opacity = min(0.3 + (size / 50), 0.9)
+            size = random.randint(14, 38)
+            delay = random.uniform(0.2, 3.5)
+            # 计算透明度，并作为 CSS 变量传入，方便动画使用
+            opacity = min(0.4 + (size / 60), 0.95)
             
             element = f"""
             <div class="floating-word" style="
                 top: {top}vh; 
                 left: {left}vw; 
                 font-size: {size}px; 
-                animation-duration: 3s;
                 animation-delay: {delay}s;
-                opacity: {opacity};
+                --final-opacity: {opacity};
             ">{word}</div>
             """
             html_elements.append(element)
         
         st.session_state.generated_words = "\n".join(html_elements)
 
-    # 3. 渲染背景漂浮词汇
+    # 3. 渲染
     st.markdown(st.session_state.generated_words, unsafe_allow_html=True)
-    
-    # 4. (可选) 一个隐藏的重置按钮，或者只是单纯展示
-    # 为了保持纯净的黑色背景体验，我们通常不放其他控件。
-    # 如果想重置，可以刷新网页。
 
 # --- 主程序入口 ---
 def main():
