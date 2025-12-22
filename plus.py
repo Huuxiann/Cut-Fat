@@ -33,24 +33,42 @@ GUFENG_WORDS = [
 
 # --- CSS 样式注入 ---
 def local_css(page_type):
+    # 通用重置样式：移除 Streamlit 默认的 padding，确保内容铺满全屏
+    reset_style = """
+    <style>
+        .block-container {
+            padding-top: 0rem !important;
+            padding-bottom: 0rem !important;
+            padding-left: 0rem !important;
+            padding-right: 0rem !important;
+            max-width: 100% !important;
+        }
+        [data-testid="stHeader"], [data-testid="stToolbar"] {
+            display: none;
+        }
+    </style>
+    """
+    st.markdown(reset_style, unsafe_allow_html=True)
+
     if page_type == 'landing':
-        # 温暖背景 CSS + 涟漪按钮
+        # 温暖背景 CSS + 强制居中样式
         bg_style = """
         <style>
             .stApp {
                 background: linear-gradient(135deg, #FFF6B7 0%, #F6416C 100%);
             }
-            header, footer {visibility: hidden;}
             
-            .btn-container {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                height: 70vh;
+            /* 强制定位按钮容器：屏幕正中心 */
+            div.stButton {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                z-index: 999;
+                width: auto !important;
             }
             
-            /* 隐藏Streamlit默认按钮样式，重写 */
+            /* 按钮样式优化 */
             div.stButton > button {
                 width: 180px;
                 height: 180px;
@@ -66,6 +84,7 @@ def local_css(page_type):
                 position: relative;
                 overflow: visible;
                 animation: floatBtn 3s ease-in-out infinite;
+                display: block; /* 修复某些布局下的显示问题 */
             }
             
             /* 涟漪效果 */
@@ -88,19 +107,25 @@ def local_css(page_type):
                 border-color: #fff;
             }
 
+            /* 备注文字强制定位：按钮下方 */
             .sub-text {
-                margin-top: 40px;
-                color: rgba(255,255,255,0.9);
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, calc(-50% + 140px)); /* 向下偏移 140px */
+                color: rgba(255,255,255,0.95);
                 font-family: 'Helvetica Neue', sans-serif;
-                font-size: 14px;
+                font-size: 16px;
                 letter-spacing: 4px;
                 text-align: center;
                 text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                white-space: nowrap;
+                z-index: 998;
             }
 
             @keyframes ripple {
                 0% { width: 100%; height: 100%; opacity: 0.8; }
-                100% { width: 200%; height: 200%; opacity: 0; }
+                100% { width: 220%; height: 220%; opacity: 0; }
             }
             
             @keyframes floatBtn {
@@ -110,7 +135,7 @@ def local_css(page_type):
         </style>
         """
     else:
-        # 黑色背景 CSS + 3D星空穿梭 + 隧道文字
+        # 黑色背景 CSS + 3D星空穿梭 + 强制居中标题
         bg_style = """
         <style>
             .stApp {
@@ -123,7 +148,6 @@ def local_css(page_type):
                 overflow: hidden;
             }
             
-            /* 增加一个全屏的星光层 */
             .star-layer {
                 position: fixed;
                 top: 0; left: 0; width: 100%; height: 100%;
@@ -141,12 +165,10 @@ def local_css(page_type):
                 from {transform: translateY(0);}
                 to {transform: translateY(-550px);}
             }
-
-            header, footer {visibility: hidden;}
             
-            /* 中心金色文字 - 更加高级的流光 */
+            /* 中心金色文字 - 强制 fixed 定位确保绝对居中 */
             .main-title {
-                position: absolute;
+                position: fixed;
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
@@ -160,6 +182,8 @@ def local_css(page_type):
                 text-shadow: 0 0 20px rgba(191, 149, 63, 0.4);
                 z-index: 100;
                 white-space: nowrap;
+                text-align: center;
+                width: 100%;
                 animation: shine 4s linear infinite, scaleIn 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             }
 
@@ -172,21 +196,17 @@ def local_css(page_type):
                 to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
             }
 
-            /* 浮动文字 - 3D 隧道效果 */
-            /* 关键在于：从中心(或附近)出发，向四周扩散，并且由小变大 */
             .floating-word {
-                position: absolute;
+                position: fixed; /* 改为 fixed 防止页面滚动导致错位 */
                 color: rgba(255, 255, 255, 0.85);
                 font-family: "KaiTi", "STKaiti", serif;
                 font-weight: bold;
                 user-select: none;
                 opacity: 0;
                 text-shadow: 0 0 8px rgba(255,215,0,0.3);
-                /* 动画定义在元素行内样式里，因为需要随机参数 */
                 transform-origin: center center;
             }
 
-            /* 定义隧道飞出动画 */
             @keyframes tunnelFly {
                 0% { 
                     opacity: 0; 
@@ -202,8 +222,7 @@ def local_css(page_type):
             }
             
             div.stButton > button {
-                border: 1px solid #444;
-                color: #666;
+                display: none; /* 隐藏动画页可能出现的默认按钮边框 */
             }
         </style>
         """
@@ -215,17 +234,13 @@ def local_css(page_type):
 def landing_page():
     local_css("landing")
     
-    col1, col2, col3 = st.columns([1, 2, 1])
+    # 不再使用 st.columns，直接渲染组件，依靠 CSS position: fixed 定位
+    clicked = st.button("开启2026")
+    st.markdown('<div class="sub-text">点击开启你的2026</div>', unsafe_allow_html=True)
     
-    with col2:
-        st.markdown('<div style="height: 30vh;"></div>', unsafe_allow_html=True)
-        
-        clicked = st.button("开启2026")
-        st.markdown('<div class="sub-text">点击开启你的2026</div>', unsafe_allow_html=True)
-        
-        if clicked:
-            st.session_state.page = 'animation'
-            st.rerun()
+    if clicked:
+        st.session_state.page = 'animation'
+        st.rerun()
 
 # --- 页面 2: 动画展示 (Animation Page) ---
 def animation_page():
@@ -236,32 +251,25 @@ def animation_page():
     
     # 2. 生成随机古风词汇
     if not st.session_state.generated_words:
-        # 生成更多词汇以营造密集感
         selected_words = random.sample(GUFENG_WORDS, 45) 
         
         html_elements = []
         for word in selected_words:
-            # 随机角度 (0-360) 和 距离，用来计算飞出的目标点
             angle_deg = random.uniform(0, 360)
-            distance = random.randint(30, 80) # 飞出多远 (vw/vh)
             
-            # 计算简单的三角函数偏移 (模拟向四周扩散)
-            # 这里简化处理，直接用 CSS 变量控制方向
-            # tx, ty 是最终飞到的位置偏移量 (相对于中心)
             import math
             angle_rad = math.radians(angle_deg)
+            # 使用视口单位 vw/vh 确保飞出屏幕
             tx = f"{math.cos(angle_rad) * 80}vw"
             ty = f"{math.sin(angle_rad) * 80}vh"
-            
-            # 随机旋转
             rot = f"{random.randint(-20, 20)}deg"
             
-            # 初始位置：都在屏幕中心附近随机一点点，避免完全重叠
-            start_top = 50 + random.uniform(-5, 5)
-            start_left = 50 + random.uniform(-5, 5)
+            # 起始点：屏幕中心 (50% 50%)
+            start_top = 50 + random.uniform(-2, 2)
+            start_left = 50 + random.uniform(-2, 2)
 
             size = random.randint(18, 40)
-            duration = random.uniform(3.0, 6.0) # 飞得慢一点更有感觉
+            duration = random.uniform(3.0, 6.0)
             delay = random.uniform(0, 4.0)
             
             element = f"""
