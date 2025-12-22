@@ -19,7 +19,7 @@ if 'generated_words' not in st.session_state:
 
 # --- 背景音乐链接 (在此处替换为你喜欢的 .mp3 链接) ---
 # 示例链接：一段轻柔的钢琴背景音
-BGM_URL = "https://cdn.pixabay.com/audio/2022/10/05/audio_68637d4023.mp3"
+BGM_URL = "https://github.com/Huuxiann/Cut-Fat/blob/main/%E5%9C%A8%E8%99%9A%E6%97%A0%E4%B8%AD%E6%B0%B8%E5%AD%98%20-%20%E8%8B%B1%E9%9B%84%E4%B8%BB%E4%B9%89.flac"
 
 # --- 古风词库 (100词) ---
 GUFENG_WORDS = [
@@ -318,3 +318,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
