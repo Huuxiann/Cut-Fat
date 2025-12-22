@@ -17,8 +17,9 @@ if 'page' not in st.session_state:
 if 'generated_words' not in st.session_state:
     st.session_state.generated_words = [] # 存储随机生成的词，避免刷新变动
 
-# --- 背景音乐链接 (GitHub Raw 链接) ---
-BGM_URL = "https://raw.githubusercontent.com/Huuxiann/Cut-Fat/main/%E5%9C%A8%E8%99%9A%E6%97%A0%E4%B8%AD%E6%B0%B8%E5%AD%98%20-%20%E8%8B%B1%E9%9B%84%E4%B8%BB%E4%B9%89.flac"
+# --- 背景音乐链接 (关键修改) ---
+# 使用 raw.githack.com 代理以获取正确的 Content-Type (audio/flac)，解决浏览器不播放的问题
+BGM_URL = "https://raw.githack.com/Huuxiann/Cut-Fat/main/%E5%9C%A8%E8%99%9A%E6%97%A0%E4%B8%AD%E6%B0%B8%E5%AD%98%20-%20%E8%8B%B1%E9%9B%84%E4%B8%BB%E4%B9%89.flac"
 
 # --- 古风词库 (100词) ---
 GUFENG_WORDS = [
@@ -34,19 +35,27 @@ GUFENG_WORDS = [
     "心想", "事成", "美梦", "成真", "笑口", "常开", "福如", "东海", "寿比", "南山"
 ]
 
-# --- 播放背景音乐函数 (增强版) ---
+# --- 播放背景音乐函数 (更稳定的原生方案) ---
 def play_bgm():
-    # 注入 HTML5 Audio 和 JavaScript 控制脚本
-    # 使用 f-string，注意 CSS/JS 中的大括号需要双写 {{ }} 转义
-    st.markdown(f"""
-    <div style="display:none">
-        <audio id="bgm_audio" preload="auto" loop>
-            <source src="{BGM_URL}" type="audio/flac">
-        </audio>
-    </div>
+    # 使用 Streamlit 原生音频组件，隐藏它但保持自动播放
+    # 注意：某些浏览器(如Chrome)如果用户没有交互，依然会拦截自动播放。
+    # 点击首页的"开启"按钮通常算作一次交互，所以进入第二页后应该能自动播放。
     
-    <!-- 音乐控制悬浮按钮 -->
-    <div id="music_btn" onclick="toggleMusic()" style="
+    # 隐藏原生播放器的 CSS
+    st.markdown("""
+        <style>
+            audio { display: none; }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    # 渲染音频，autoplay=True 是 Streamlit 1.33+ 的特性，如果报错请升级 streamlit
+    # 如果版本较低，它可能不会自动播放，但至少文件加载是正确的
+    st.audio(BGM_URL, format="audio/flac", start_time=0, autoplay=True)
+
+    # 备用的右上角手动开关 (保留以防自动播放彻底失败)
+    st.markdown(f"""
+    <!-- 音乐控制悬浮按钮 (纯 JS 控制原生 audio 标签的备份方案) -->
+    <div id="music_btn" onclick="document.querySelector('audio').paused ? document.querySelector('audio').play() : document.querySelector('audio').pause()" style="
         position: fixed; 
         top: 20px; 
         right: 20px; 
@@ -63,50 +72,9 @@ def play_bgm():
         color: white;
         transition: all 0.3s;
         user-select: none;
-    ">
-        🔇
+    " title="点击播放/暂停">
+        🎵
     </div>
-
-    <script>
-        var audio = document.getElementById("bgm_audio");
-        var btn = document.getElementById("music_btn");
-        
-        // 尝试自动播放
-        function tryPlay() {{
-            var playPromise = audio.play();
-            if (playPromise !== undefined) {{
-                playPromise.then(_ => {{
-                    // 播放成功
-                    btn.innerHTML = "🎵";
-                    btn.style.animation = "spin 4s linear infinite";
-                }}).catch(error => {{
-                    // 播放失败（通常是因为浏览器策略）
-                    console.log("Autoplay prevented. Waiting for user interaction.");
-                    btn.innerHTML = "🔇";
-                    btn.style.animation = "none";
-                }});
-            }}
-        }}
-        
-        // 页面加载后立即尝试
-        setTimeout(tryPlay, 500);
-
-        // 切换播放状态
-        function toggleMusic() {{
-            if (audio.paused) {{
-                audio.play();
-                btn.innerHTML = "🎵";
-                btn.style.animation = "spin 4s linear infinite";
-            }} else {{
-                audio.pause();
-                btn.innerHTML = "🔇";
-                btn.style.animation = "none";
-            }}
-        }}
-    </script>
-    <style>
-        @keyframes spin {{ 100% {{ transform: rotate(360deg); }} }}
-    </style>
     """, unsafe_allow_html=True)
 
 # --- CSS 样式注入 ---
