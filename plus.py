@@ -34,12 +34,11 @@ GUFENG_WORDS = [
 # --- CSS 样式注入 ---
 def local_css(page_type):
     if page_type == 'landing':
-        # 温暖背景 CSS (保持原样，微调按钮质感)
+        # 温暖背景 CSS + 涟漪按钮
         bg_style = """
         <style>
             .stApp {
-                background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
-                background-image: linear-gradient(to top, #fad0c4 0%, #ffd1ff 100%);
+                background: linear-gradient(135deg, #FFF6B7 0%, #F6416C 100%);
             }
             header, footer {visibility: hidden;}
             
@@ -51,121 +50,155 @@ def local_css(page_type):
                 height: 70vh;
             }
             
+            /* 隐藏Streamlit默认按钮样式，重写 */
             div.stButton > button {
-                width: 200px;
-                height: 200px;
+                width: 180px;
+                height: 180px;
                 border-radius: 50%;
-                background: linear-gradient(45deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
+                background: rgba(255, 255, 255, 0.25);
+                backdrop-filter: blur(10px);
+                border: 2px solid rgba(255, 255, 255, 0.6);
                 color: white;
-                font-size: 26px;
-                font-weight: bold;
-                border: none;
-                box-shadow: 0 10px 30px rgba(255, 107, 107, 0.4);
+                font-size: 24px;
+                font-weight: 600;
+                box-shadow: 0 0 20px rgba(255,255,255,0.3);
                 transition: all 0.3s ease;
-                animation: pulse 2s infinite;
-                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                position: relative;
+                overflow: visible;
+                animation: floatBtn 3s ease-in-out infinite;
+            }
+            
+            /* 涟漪效果 */
+            div.stButton > button::before {
+                content: '';
+                position: absolute;
+                top: 50%; left: 50%;
+                transform: translate(-50%, -50%);
+                width: 100%; height: 100%;
+                border-radius: 50%;
+                border: 2px solid rgba(255, 255, 255, 0.5);
+                animation: ripple 2s infinite;
+                z-index: -1;
             }
             
             div.stButton > button:hover {
-                transform: scale(1.08);
-                box-shadow: 0 15px 40px rgba(255, 107, 107, 0.6);
-                background: linear-gradient(45deg, #fecfef 0%, #ff9a9e 100%);
+                transform: scale(1.1);
+                background: rgba(255, 255, 255, 0.4);
+                color: #fff;
+                border-color: #fff;
             }
 
             .sub-text {
-                margin-top: 25px;
-                color: #777;
+                margin-top: 40px;
+                color: rgba(255,255,255,0.9);
                 font-family: 'Helvetica Neue', sans-serif;
-                font-size: 16px;
-                letter-spacing: 3px;
+                font-size: 14px;
+                letter-spacing: 4px;
                 text-align: center;
-                opacity: 0.8;
-                animation: fadeInOut 3s infinite;
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
             }
 
-            @keyframes pulse {
-                0% { box-shadow: 0 0 0 0 rgba(255, 154, 158, 0.6); }
-                70% { box-shadow: 0 0 0 25px rgba(255, 154, 158, 0); }
-                100% { box-shadow: 0 0 0 0 rgba(255, 154, 158, 0); }
+            @keyframes ripple {
+                0% { width: 100%; height: 100%; opacity: 0.8; }
+                100% { width: 200%; height: 200%; opacity: 0; }
             }
-
-            @keyframes fadeInOut {
-                0%, 100% { opacity: 0.5; }
-                50% { opacity: 1; }
+            
+            @keyframes floatBtn {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-10px); }
             }
         </style>
         """
     else:
-        # 黑色背景 CSS + 星空特效 + 流光文字
+        # 黑色背景 CSS + 3D星空穿梭 + 隧道文字
         bg_style = """
         <style>
             .stApp {
-                background-color: #000000;
-                /* 模拟星空背景 */
+                background-color: #050505;
+                background-image: 
+                    radial-gradient(1px 1px at 50% 50%, #ffffff 50%, transparent),
+                    radial-gradient(2px 2px at 10% 20%, #ffffff 50%, transparent),
+                    radial-gradient(1px 1px at 90% 80%, #ffffff 50%, transparent);
+                background-size: 100% 100%;
+                overflow: hidden;
+            }
+            
+            /* 增加一个全屏的星光层 */
+            .star-layer {
+                position: fixed;
+                top: 0; left: 0; width: 100%; height: 100%;
                 background-image: 
                     radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 3px),
                     radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 2px),
                     radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 3px);
-                background-size: 550px 550px, 350px 350px, 250px 250px;
-                background-position: 0 0, 40px 60px, 130px 270px;
-                animation: starMove 100s linear infinite;
+                background-size: 550px 550px, 350px 350px, 250px 250px; 
+                animation: starMove 60s linear infinite;
+                z-index: 0;
+                pointer-events: none;
             }
-            
+
             @keyframes starMove {
-                from {background-position: 0 0, 40px 60px, 130px 270px;}
-                to {background-position: 550px 550px, 390px 410px, 680px 820px;}
+                from {transform: translateY(0);}
+                to {transform: translateY(-550px);}
             }
 
             header, footer {visibility: hidden;}
             
-            /* 中心金色文字 - 增加流光渐变效果 */
+            /* 中心金色文字 - 更加高级的流光 */
             .main-title {
                 position: absolute;
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
-                font-size: 3.5em;
+                font-size: 3.8em;
                 font-weight: 900;
-                background: linear-gradient(45deg, #FFD700, #FDB931, #FFFFE0, #FDB931, #FFD700);
+                font-family: "SimSun", serif;
+                background: linear-gradient(120deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
                 background-size: 200% auto;
                 -webkit-background-clip: text;
                 -webkit-text-fill-color: transparent;
-                text-shadow: 0 0 30px rgba(253, 185, 49, 0.3);
+                text-shadow: 0 0 20px rgba(191, 149, 63, 0.4);
                 z-index: 100;
                 white-space: nowrap;
-                animation: shine 3s linear infinite, popIn 1.5s ease-out;
+                animation: shine 4s linear infinite, scaleIn 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             }
 
             @keyframes shine {
                 to { background-position: 200% center; }
             }
-
-            @keyframes popIn {
-                0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); filter: blur(10px); }
-                100% { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: blur(0px); }
+            
+            @keyframes scaleIn {
+                from { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+                to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
             }
 
-            /* 浮动文字 */
+            /* 浮动文字 - 3D 隧道效果 */
+            /* 关键在于：从中心(或附近)出发，向四周扩散，并且由小变大 */
             .floating-word {
                 position: absolute;
-                color: rgba(255, 255, 255, 0.9);
-                font-family: "KaiTi", "STKaiti", "SimSun", serif; 
+                color: rgba(255, 255, 255, 0.85);
+                font-family: "KaiTi", "STKaiti", serif;
+                font-weight: bold;
                 user-select: none;
                 opacity: 0;
-                text-shadow: 0 0 5px rgba(255,255,255,0.3);
-                animation: floatIn 4s ease-out forwards, drift 6s ease-in-out infinite alternate;
+                text-shadow: 0 0 8px rgba(255,215,0,0.3);
+                /* 动画定义在元素行内样式里，因为需要随机参数 */
+                transform-origin: center center;
             }
 
-            /* 出现动画 */
-            @keyframes floatIn {
-                0% { opacity: 0; transform: scale(0) translateY(50px); filter: blur(5px);}
-                100% { opacity: var(--final-opacity); transform: scale(1) translateY(0); filter: blur(0px);}
-            }
-
-            /* 持续漂浮动画 */
-            @keyframes drift {
-                0% { transform: translateY(0px); }
-                100% { transform: translateY(-10px); }
+            /* 定义隧道飞出动画 */
+            @keyframes tunnelFly {
+                0% { 
+                    opacity: 0; 
+                    transform: translate(-50%, -50%) scale(0.1) rotate(0deg); 
+                    filter: blur(4px);
+                }
+                20% { opacity: 0.8; }
+                100% { 
+                    opacity: 0; 
+                    transform: translate(var(--tx), var(--ty)) scale(2.5) rotate(var(--rot)); 
+                    filter: blur(0px);
+                }
             }
             
             div.stButton > button {
@@ -175,6 +208,8 @@ def local_css(page_type):
         </style>
         """
     st.markdown(bg_style, unsafe_allow_html=True)
+    if page_type != 'landing':
+        st.markdown('<div class="star-layer"></div>', unsafe_allow_html=True)
 
 # --- 页面 1: 入口 (Landing Page) ---
 def landing_page():
@@ -201,29 +236,44 @@ def animation_page():
     
     # 2. 生成随机古风词汇
     if not st.session_state.generated_words:
-        selected_words = random.sample(GUFENG_WORDS, 40) # 稍微增加数量到40
+        # 生成更多词汇以营造密集感
+        selected_words = random.sample(GUFENG_WORDS, 45) 
         
         html_elements = []
         for word in selected_words:
-            top = random.randint(5, 90)
-            left = random.randint(5, 90)
+            # 随机角度 (0-360) 和 距离，用来计算飞出的目标点
+            angle_deg = random.uniform(0, 360)
+            distance = random.randint(30, 80) # 飞出多远 (vw/vh)
             
-            # 避让中心区域 (加宽避让范围)
-            if 30 < top < 70 and 20 < left < 80:
-                continue
-                
-            size = random.randint(14, 38)
-            delay = random.uniform(0.2, 3.5)
-            # 计算透明度，并作为 CSS 变量传入，方便动画使用
-            opacity = min(0.4 + (size / 60), 0.95)
+            # 计算简单的三角函数偏移 (模拟向四周扩散)
+            # 这里简化处理，直接用 CSS 变量控制方向
+            # tx, ty 是最终飞到的位置偏移量 (相对于中心)
+            import math
+            angle_rad = math.radians(angle_deg)
+            tx = f"{math.cos(angle_rad) * 80}vw"
+            ty = f"{math.sin(angle_rad) * 80}vh"
+            
+            # 随机旋转
+            rot = f"{random.randint(-20, 20)}deg"
+            
+            # 初始位置：都在屏幕中心附近随机一点点，避免完全重叠
+            start_top = 50 + random.uniform(-5, 5)
+            start_left = 50 + random.uniform(-5, 5)
+
+            size = random.randint(18, 40)
+            duration = random.uniform(3.0, 6.0) # 飞得慢一点更有感觉
+            delay = random.uniform(0, 4.0)
             
             element = f"""
             <div class="floating-word" style="
-                top: {top}vh; 
-                left: {left}vw; 
+                top: {start_top}%; 
+                left: {start_left}%; 
                 font-size: {size}px; 
+                animation: tunnelFly {duration}s ease-out infinite;
                 animation-delay: {delay}s;
-                --final-opacity: {opacity};
+                --tx: {tx};
+                --ty: {ty};
+                --rot: {rot};
             ">{word}</div>
             """
             html_elements.append(element)
