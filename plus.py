@@ -17,8 +17,7 @@ if 'page' not in st.session_state:
 if 'generated_words' not in st.session_state:
     st.session_state.generated_words = [] # 存储随机生成的词，避免刷新变动
 
-# --- 背景音乐链接 (已修正为 GitHub Raw 链接) ---
-# 注意：GitHub 链接必须使用 raw.githubusercontent.com 格式才能直接播放
+# --- 背景音乐链接 (GitHub Raw 链接) ---
 BGM_URL = "https://raw.githubusercontent.com/Huuxiann/Cut-Fat/main/%E5%9C%A8%E8%99%9A%E6%97%A0%E4%B8%AD%E6%B0%B8%E5%AD%98%20-%20%E8%8B%B1%E9%9B%84%E4%B8%BB%E4%B9%89.flac"
 
 # --- 古风词库 (100词) ---
@@ -38,8 +37,7 @@ GUFENG_WORDS = [
 # --- 播放背景音乐函数 (增强版) ---
 def play_bgm():
     # 注入 HTML5 Audio 和 JavaScript 控制脚本
-    # 增加右上角悬浮按钮，如果自动播放失败，用户可以点击图标播放
-    # type="audio/flac" 适配 flac 格式
+    # 使用 f-string，注意 CSS/JS 中的大括号需要双写 {{ }} 转义
     st.markdown(f"""
     <div style="display:none">
         <audio id="bgm_audio" preload="auto" loop>
@@ -113,7 +111,7 @@ def play_bgm():
 
 # --- CSS 样式注入 ---
 def local_css(page_type):
-    # 通用重置样式：移除 Streamlit 默认的 padding，确保内容铺满全屏
+    # 通用重置样式
     reset_style = """
     <style>
         .block-container {
@@ -164,7 +162,7 @@ def local_css(page_type):
                 position: relative;
                 overflow: visible;
                 animation: floatBtn 3s ease-in-out infinite;
-                display: block; /* 修复某些布局下的显示问题 */
+                display: block;
             }
             
             /* 涟漪效果 */
@@ -175,4 +173,211 @@ def local_css(page_type):
                 transform: translate(-50%, -50%);
                 width: 100%; height: 100%;
                 border-radius: 50%;
-                border
+                border: 2px solid rgba(255, 255, 255, 0.5);
+                animation: ripple 2s infinite;
+                z-index: -1;
+            }
+            
+            div.stButton > button:hover {
+                transform: scale(1.1);
+                background: rgba(255, 255, 255, 0.4);
+                color: #fff;
+                border-color: #fff;
+            }
+
+            /* 备注文字强制定位：按钮下方 */
+            .sub-text {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, calc(-50% + 140px));
+                color: rgba(255,255,255,0.95);
+                font-family: 'Helvetica Neue', sans-serif;
+                font-size: 16px;
+                letter-spacing: 4px;
+                text-align: center;
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                white-space: nowrap;
+                z-index: 998;
+            }
+
+            @keyframes ripple {
+                0% { width: 100%; height: 100%; opacity: 0.8; }
+                100% { width: 220%; height: 220%; opacity: 0; }
+            }
+            
+            @keyframes floatBtn {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-10px); }
+            }
+        </style>
+        """
+    else:
+        # 黑色背景 CSS + 3D星空穿梭 + 强制居中标题
+        bg_style = """
+        <style>
+            .stApp {
+                background-color: #050505;
+                background-image: 
+                    radial-gradient(1px 1px at 50% 50%, #ffffff 50%, transparent),
+                    radial-gradient(2px 2px at 10% 20%, #ffffff 50%, transparent),
+                    radial-gradient(1px 1px at 90% 80%, #ffffff 50%, transparent);
+                background-size: 100% 100%;
+                overflow: hidden;
+            }
+            
+            .star-layer {
+                position: fixed;
+                top: 0; left: 0; width: 100%; height: 100%;
+                background-image: 
+                    radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 3px),
+                    radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 2px),
+                    radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 3px);
+                background-size: 550px 550px, 350px 350px, 250px 250px; 
+                animation: starMove 60s linear infinite;
+                z-index: 0;
+                pointer-events: none;
+            }
+
+            @keyframes starMove {
+                from {transform: translateY(0);}
+                to {transform: translateY(-550px);}
+            }
+            
+            /* 中心金色文字 - 强制 fixed 定位确保绝对居中 */
+            .main-title {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                font-size: 3.8em;
+                font-weight: 900;
+                font-family: "SimSun", serif;
+                background: linear-gradient(120deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
+                background-size: 200% auto;
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                text-shadow: 0 0 20px rgba(191, 149, 63, 0.4);
+                z-index: 100;
+                white-space: nowrap;
+                text-align: center;
+                width: 100%;
+                animation: shine 4s linear infinite, scaleIn 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            }
+
+            @keyframes shine {
+                to { background-position: 200% center; }
+            }
+            
+            @keyframes scaleIn {
+                from { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+                to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            }
+
+            .floating-word {
+                position: fixed;
+                color: rgba(255, 255, 255, 0.85);
+                font-family: "KaiTi", "STKaiti", serif;
+                font-weight: bold;
+                user-select: none;
+                opacity: 0;
+                text-shadow: 0 0 8px rgba(255,215,0,0.3);
+                transform-origin: center center;
+            }
+
+            @keyframes tunnelFly {
+                0% { 
+                    opacity: 0; 
+                    transform: translate(-50%, -50%) scale(0.1) rotate(0deg); 
+                    filter: blur(4px);
+                }
+                20% { opacity: 0.8; }
+                100% { 
+                    opacity: 0; 
+                    transform: translate(var(--tx), var(--ty)) scale(2.5) rotate(var(--rot)); 
+                    filter: blur(0px);
+                }
+            }
+            
+            div.stButton > button {
+                display: none;
+            }
+        </style>
+        """
+    st.markdown(bg_style, unsafe_allow_html=True)
+    if page_type != 'landing':
+        st.markdown('<div class="star-layer"></div>', unsafe_allow_html=True)
+
+# --- 页面 1: 入口 (Landing Page) ---
+def landing_page():
+    local_css("landing")
+    
+    # 不再使用 st.columns，直接渲染组件，依靠 CSS position: fixed 定位
+    clicked = st.button("开启2026")
+    st.markdown('<div class="sub-text">点击开启你的2026</div>', unsafe_allow_html=True)
+    
+    if clicked:
+        st.session_state.page = 'animation'
+        st.rerun()
+
+# --- 页面 2: 动画展示 (Animation Page) ---
+def animation_page():
+    local_css("animation")
+    
+    # 注入背景音乐
+    play_bgm()
+    
+    # 1. 渲染中心金色文字
+    st.markdown('<div class="main-title">希望2026年的你…</div>', unsafe_allow_html=True)
+    
+    # 2. 生成随机古风词汇
+    if not st.session_state.generated_words:
+        selected_words = random.sample(GUFENG_WORDS, 45) 
+        
+        html_elements = []
+        for word in selected_words:
+            angle_deg = random.uniform(0, 360)
+            
+            import math
+            angle_rad = math.radians(angle_deg)
+            # 使用视口单位 vw/vh 确保飞出屏幕
+            tx = f"{math.cos(angle_rad) * 80}vw"
+            ty = f"{math.sin(angle_rad) * 80}vh"
+            rot = f"{random.randint(-20, 20)}deg"
+            
+            # 起始点：屏幕中心 (50% 50%)
+            start_top = 50 + random.uniform(-2, 2)
+            start_left = 50 + random.uniform(-2, 2)
+
+            size = random.randint(18, 40)
+            duration = random.uniform(3.0, 6.0)
+            delay = random.uniform(0, 4.0)
+            
+            element = f"""
+            <div class="floating-word" style="
+                top: {start_top}%; 
+                left: {start_left}%; 
+                font-size: {size}px; 
+                animation: tunnelFly {duration}s ease-out infinite;
+                animation-delay: {delay}s;
+                --tx: {tx};
+                --ty: {ty};
+                --rot: {rot};
+            ">{word}</div>
+            """
+            html_elements.append(element)
+        
+        st.session_state.generated_words = "\n".join(html_elements)
+
+    # 3. 渲染
+    st.markdown(st.session_state.generated_words, unsafe_allow_html=True)
+
+# --- 主程序入口 ---
+def main():
+    if st.session_state.page == 'landing':
+        landing_page()
+    else:
+        animation_page()
+
+if __name__ == "__main__":
+    main()
