@@ -17,6 +17,10 @@ if 'page' not in st.session_state:
 if 'generated_words' not in st.session_state:
     st.session_state.generated_words = [] # 存储随机生成的词，避免刷新变动
 
+# --- 背景音乐链接 (在此处替换为你喜欢的 .mp3 链接) ---
+# 示例链接：一段轻柔的钢琴背景音
+BGM_URL = "https://cdn.pixabay.com/audio/2022/10/05/audio_68637d4023.mp3"
+
 # --- 古风词库 (100词) ---
 GUFENG_WORDS = [
     "岁岁平安", "喜乐无忧", "前程似锦", "万事胜意", "吉吉利利", "百无禁忌", "长安", "常安", "长乐", "未央",
@@ -30,6 +34,17 @@ GUFENG_WORDS = [
     "风生", "水起", "步步", "高升", "平步", "青云", "鱼跃", "龙门", "金榜", "题名",
     "心想", "事成", "美梦", "成真", "笑口", "常开", "福如", "东海", "寿比", "南山"
 ]
+
+# --- 播放背景音乐函数 ---
+def play_bgm():
+    # 使用 hidden 属性隐藏播放器，autoplay 自动播放，loop 循环
+    # 注意：大部分浏览器需要用户与页面有交互（点击等）后才允许自动播放音频
+    # 因为我们是在点击按钮进入第二页后加载此代码，所以通常能成功触发
+    st.markdown(f"""
+    <audio autoplay loop hidden>
+        <source src="{BGM_URL}" type="audio/mp3">
+    </audio>
+    """, unsafe_allow_html=True)
 
 # --- CSS 样式注入 ---
 def local_css(page_type):
@@ -245,6 +260,9 @@ def landing_page():
 # --- 页面 2: 动画展示 (Animation Page) ---
 def animation_page():
     local_css("animation")
+    
+    # 注入背景音乐
+    play_bgm()
     
     # 1. 渲染中心金色文字
     st.markdown('<div class="main-title">希望2026年的你…</div>', unsafe_allow_html=True)
